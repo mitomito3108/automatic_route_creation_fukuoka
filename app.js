@@ -22,11 +22,8 @@ const POIS = [
   { id: "zoo", name: "福岡市動植物園", lat: 33.5704, lng: 130.3902 },
   { id: "museum", name: "福岡市美術館", lat: 33.5863, lng: 130.3745 },
   { id: "uminaka", name: "海の中道海浜公園", lat: 33.6670, lng: 130.3606 },
-
-  // --- 追加10地点 ---
   { id: "aoba", name: "青葉公園", lat: 33.6669, lng: 130.4546 },
   { id: "airport", name: "福岡空港", lat: 33.5859, lng: 130.4514 },
-  { id: "lalaport", name: "ららぽーと福岡", lat: 33.5629, lng: 130.4260 },
   { id: "higashi", name: "東区役所", lat: 33.6707, lng: 130.4441 },
   { id: "minami", name: "南区役所", lat: 33.5527, lng: 130.4164 },
   { id: "hakata", name: "博多区役所", lat: 33.5903, lng: 130.4200 },
@@ -213,3 +210,4 @@ function clearAll() {
 function setStatus(msg) {
   document.getElementById("status").textContent = msg;
 }
+
