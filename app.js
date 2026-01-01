@@ -2,14 +2,12 @@
 // 1. 定数定義
 // ================================
 
-// スタート地点（あいれふ）
 const START_POINT = {
   name: "あいれふ",
   lat: 33.5909,
   lng: 130.3939
 };
 
-// 経由地点
 const POIS = [
   { id: "ohori", name: "大濠公園", lat: 33.5866, lng: 130.3750 },
   { id: "tower", name: "福岡タワー", lat: 33.5933, lng: 130.3516 },
@@ -34,27 +32,27 @@ const POIS = [
 const COLORS = ["#1a73e8", "#34a853", "#ea4335"];
 
 // ================================
-// 2. グローバル変数
+// 2. グローバル
 // ================================
 
 let map;
-let directionsRenderers = [];
+let renderers = [];
 let markers = [];
+let worker;
 
 // ================================
 // 3. 初期化
 // ================================
 
-window.addEventListener("load", init);
-
-function init() {
+window.onload = () => {
   initMap();
   buildCheckboxList();
   bindEvents();
-}
+  worker = new Worker("worker.js");
+};
 
 // ================================
-// 4. マップ初期化
+// 4. Map
 // ================================
 
 function initMap() {
@@ -62,60 +60,79 @@ function initMap() {
     center: START_POINT,
     zoom: 12
   });
-
   addStartMarker();
 }
 
 // ================================
-// 5. チェックボックス生成
+// 5. UI生成
 // ================================
 
 function buildCheckboxList() {
   const list = document.getElementById("poiList");
   list.innerHTML = "";
 
-  POIS.forEach(poi => {
+  POIS.forEach(p => {
     const label = document.createElement("label");
     label.className = "checkbox-item";
 
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.value = poi.id;
+    cb.value = p.id;
+    cb.onchange = updateSelectedTags;
 
     label.appendChild(cb);
-    label.appendChild(document.createTextNode(poi.name));
+    label.appendChild(document.createTextNode(p.name));
     list.appendChild(label);
   });
 }
 
-// ================================
-// 6. UIイベント
-// ================================
-
-function bindEvents() {
-  document.getElementById("calcBtn").addEventListener("click", calculate);
-  document.getElementById("clearBtn").addEventListener("click", clearAll);
+function updateSelectedTags() {
+  const tags = document.getElementById("selectedTags");
+  tags.innerHTML = "";
+  getSelectedPois().forEach(p => {
+    const span = document.createElement("span");
+    span.className = "tag";
+    span.textContent = p.name;
+    tags.appendChild(span);
+  });
 }
 
 // ================================
-// 7. ルート計算
+// 6. Events
+// ================================
+
+function bindEvents() {
+  document.getElementById("calcBtn").onclick = calculate;
+  document.getElementById("clearBtn").onclick = clearAll;
+}
+
+// ================================
+// 7. 計算開始
 // ================================
 
 function calculate() {
   clearRoutes();
 
-  const carCount = Number(document.getElementById("carCount").value);
   const selected = getSelectedPois();
-
-  if (selected.length === 0) {
+  if (!selected.length) {
     setStatus("経由地を選択してください");
     return;
   }
 
-  const groups = splitIntoGroups(selected, carCount);
-  groups.forEach((group, i) => drawRoute(group, i));
+  const carCount = Number(document.getElementById("carCount").value);
 
-  setStatus("ルート計算完了");
+  setStatus("計算中...");
+  document.getElementById("calcBtn").disabled = true;
+
+  worker.postMessage({
+    pois: selected,
+    carCount
+  });
+
+  worker.onmessage = e => {
+    const groups = e.data;
+    groups.forEach((g, i) => drawRoute(g, i));
+  };
 }
 
 // ================================
@@ -127,119 +144,98 @@ function drawRoute(pois, index) {
   const renderer = new google.maps.DirectionsRenderer({
     map,
     suppressMarkers: true,
-    polylineOptions: {
-      strokeColor: COLORS[index],
-      strokeWeight: 5
-    }
+    polylineOptions: { strokeColor: COLORS[index], strokeWeight: 5 }
   });
 
-  directionsRenderers.push(renderer);
+  renderers.push(renderer);
 
-  const waypoints = pois.map(p => ({
-    location: { lat: p.lat, lng: p.lng },
-    stopover: true
-  }));
+  service.route({
+    origin: START_POINT,
+    destination: START_POINT,
+    waypoints: pois.map(p => ({ location: p, stopover: true })),
+    optimizeWaypoints: true,
+    travelMode: "DRIVING"
+  }, (res, status) => {
+    if (status !== "OK") return;
 
-  service.route(
-    {
-      origin: START_POINT,
-      destination: START_POINT,
-      waypoints,
-      optimizeWaypoints: true,
-      travelMode: google.maps.TravelMode.DRIVING
-    },
-    (result, status) => {
-      if (status === "OK") {
-        renderer.setDirections(result);
+    renderer.setDirections(res);
+    renderRouteDetail(res, index, pois);
+    addStartMarker();
 
-        // ★ pois を渡す
-        renderRouteDetail(result, index, pois);
+    res.routes[0].waypoint_order.forEach((i, n) =>
+      addNumberedMarker(pois[i], n + 1, COLORS[index])
+    );
 
-        const order = result.routes[0].waypoint_order;
-
-        addStartMarker();
-
-        order.forEach((idx, i) => {
-          addNumberedMarker(pois[idx], i + 1, COLORS[index]);
-        });
-      }
-    }
-  );
+    finalize();
+  });
 }
 
 // ================================
-// 9. ルート詳細DOM生成（地点名表示）
+// 9. 詳細表示
 // ================================
 
 function renderRouteDetail(result, index, pois) {
-  const container = document.getElementById("routeDetail");
-
+  const box = document.getElementById("routeDetail");
   const route = result.routes[0];
   const legs = route.legs;
   const order = route.waypoint_order;
+  const ordered = order.map(i => pois[i]);
+  const points = [START_POINT, ...ordered, START_POINT];
 
-  // 並び替え後の地点名配列
-  const orderedPois = order.map(i => pois[i]);
-  const points = [START_POINT, ...orderedPois, START_POINT];
+  let dist = 0, time = 0;
 
-  const section = document.createElement("div");
-  section.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車 ${index + 1}</h4>`;
-
+  const div = document.createElement("div");
+  div.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車${index + 1}</h4>`;
   const ol = document.createElement("ol");
 
-  legs.forEach((leg, i) => {
-    const from = points[i].name;
-    const to = points[i + 1].name;
-
+  legs.forEach((l, i) => {
+    dist += l.distance.value;
+    time += l.duration.value;
     const li = document.createElement("li");
-    li.textContent = `${from} → ${to}（${leg.distance.text} / ${leg.duration.text}）`;
+    li.textContent = `${points[i].name} → ${points[i + 1].name}（${l.distance.text} / ${l.duration.text}）`;
     ol.appendChild(li);
   });
 
-  section.appendChild(ol);
-  container.appendChild(section);
+  div.appendChild(ol);
+  box.appendChild(div);
+
+  appendTotals(index, dist, time);
 }
 
 // ================================
-// 10. マーカー関連
+// 10. 合計表示
+// ================================
+
+function appendTotals(i, dist, time) {
+  const t = document.getElementById("totals");
+  const km = (dist / 1000).toFixed(1);
+  const min = Math.round(time / 60);
+  t.innerHTML += `<div style="color:${COLORS[i]}">車${i + 1}: ${km}km / ${min}分</div>`;
+}
+
+// ================================
+// 11. Marker
 // ================================
 
 function addStartMarker() {
-  const marker = new google.maps.Marker({
+  markers.push(new google.maps.Marker({
     position: START_POINT,
     map,
-    label: { text: "S", color: "#fff", fontWeight: "bold" },
-    icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 14,
-      fillColor: "#16a34a",
-      fillOpacity: 1,
-      strokeColor: "#fff",
-      strokeWeight: 2
-    }
-  });
-  markers.push(marker);
+    label: "S"
+  }));
 }
 
-function addNumberedMarker(point, number, color) {
-  const marker = new google.maps.Marker({
-    position: { lat: point.lat, lng: point.lng },
+function addNumberedMarker(p, n, c) {
+  markers.push(new google.maps.Marker({
+    position: p,
     map,
-    label: { text: String(number), color: "#fff", fontWeight: "bold" },
-    icon: {
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 12,
-      fillColor: color,
-      fillOpacity: 1,
-      strokeColor: "#fff",
-      strokeWeight: 2
-    }
-  });
-  markers.push(marker);
+    label: { text: String(n), color: "#fff" },
+    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: c, fillOpacity: 1 }
+  }));
 }
 
 // ================================
-// 11. 補助関数
+// 12. Util
 // ================================
 
 function getSelectedPois() {
@@ -247,29 +243,27 @@ function getSelectedPois() {
   return POIS.filter(p => ids.includes(p.id));
 }
 
-function splitIntoGroups(arr, n) {
-  const groups = Array.from({ length: n }, () => []);
-  arr.forEach((item, i) => groups[i % n].push(item));
-  return groups;
-}
-
 function clearRoutes() {
-  directionsRenderers.forEach(r => r.setMap(null));
-  directionsRenderers = [];
-
+  renderers.forEach(r => r.setMap(null));
   markers.forEach(m => m.setMap(null));
+  renderers = [];
   markers = [];
-
   document.getElementById("routeDetail").innerHTML = "";
-  addStartMarker();
+  document.getElementById("totals").innerHTML = "";
 }
 
 function clearAll() {
-  document.querySelectorAll("#poiList input").forEach(cb => cb.checked = false);
+  document.querySelectorAll("input[type=checkbox]").forEach(c => c.checked = false);
+  updateSelectedTags();
   clearRoutes();
   setStatus("");
 }
 
-function setStatus(msg) {
-  document.getElementById("status").textContent = msg;
+function setStatus(t) {
+  document.getElementById("status").textContent = t;
+}
+
+function finalize() {
+  setStatus("ルート計算完了");
+  document.getElementById("calcBtn").disabled = false;
 }
