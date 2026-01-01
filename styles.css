@@ -35,7 +35,7 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Seg
 .actions { display: flex; gap: 10px; align-items: center; }
 .btn { padding: 10px 16px; border-radius: 12px; border: 1px solid #d1d5db; background: #fff; color: #111827; cursor: pointer; transition: all .2s ease; }
 .btn:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
-.btn.primary { border-color: #2563eb; background: linear-gradient(180deg, #3b82f6, #2563eb); color: #fff; }
+.btn.primary { padding: 14px 24px; border-color: #2563eb; background: linear-gradient(180deg, #3b82f6, #2563eb); color: #fff; }
 .btn.primary:hover { filter: brightness(1.05); }
 
 /* マップ＋サイド */
