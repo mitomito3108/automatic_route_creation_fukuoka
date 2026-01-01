@@ -152,7 +152,8 @@ function drawRoute(pois, index) {
       if (status === "OK") {
         renderer.setDirections(result);
 
-        renderRouteDetail(result, index);
+        // ★ pois を渡す
+        renderRouteDetail(result, index, pois);
 
         const order = result.routes[0].waypoint_order;
 
@@ -167,18 +168,18 @@ function drawRoute(pois, index) {
 }
 
 // ================================
-// 9. ルート詳細DOM生成（①）
+// 9. ルート詳細DOM生成（地点名表示）
 // ================================
 
-function renderRouteDetail(result, index) {
+function renderRouteDetail(result, index, pois) {
   const container = document.getElementById("routeDetail");
 
   const route = result.routes[0];
   const legs = route.legs;
   const order = route.waypoint_order;
 
-  // 並び替え後の地点配列を作成
-  const orderedPois = order.map(i => POIS.find(p => p.id === result.request.waypoints[i].location.id));
+  // 並び替え後の地点名配列
+  const orderedPois = order.map(i => pois[i]);
   const points = [START_POINT, ...orderedPois, START_POINT];
 
   const section = document.createElement("div");
@@ -200,7 +201,7 @@ function renderRouteDetail(result, index) {
 }
 
 // ================================
-// 10. マーカー関連（②）
+// 10. マーカー関連
 // ================================
 
 function addStartMarker() {
@@ -272,4 +273,3 @@ function clearAll() {
 function setStatus(msg) {
   document.getElementById("status").textContent = msg;
 }
-
