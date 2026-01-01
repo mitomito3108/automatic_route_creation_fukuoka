@@ -175,16 +175,23 @@ function renderRouteDetail(result, index) {
 
   const route = result.routes[0];
   const legs = route.legs;
+  const order = route.waypoint_order;
+
+  // 並び替え後の地点配列を作成
+  const orderedPois = order.map(i => POIS.find(p => p.id === result.request.waypoints[i].location.id));
+  const points = [START_POINT, ...orderedPois, START_POINT];
 
   const section = document.createElement("div");
   section.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車 ${index + 1}</h4>`;
 
   const ol = document.createElement("ol");
 
-  legs.forEach(leg => {
+  legs.forEach((leg, i) => {
+    const from = points[i].name;
+    const to = points[i + 1].name;
+
     const li = document.createElement("li");
-    li.textContent = `${leg.start_address} → ${leg.end_address}
-      (${leg.distance.text} / ${leg.duration.text})`;
+    li.textContent = `${from} → ${to}（${leg.distance.text} / ${leg.duration.text}）`;
     ol.appendChild(li);
   });
 
@@ -265,3 +272,4 @@ function clearAll() {
 function setStatus(msg) {
   document.getElementById("status").textContent = msg;
 }
+
