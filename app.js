@@ -9,10 +9,8 @@ const START_POINT = {
   lng: 130.3939
 };
 
-// 経由地点（観光地 + 追加地点）
-// ※ 能古島は除外
+// 経由地点
 const POIS = [
-  // --- 観光地 ---
   { id: "ohori", name: "大濠公園", lat: 33.5866, lng: 130.3750 },
   { id: "tower", name: "福岡タワー", lat: 33.5933, lng: 130.3516 },
   { id: "dazaifu", name: "太宰府天満宮", lat: 33.5215, lng: 130.5349 },
@@ -40,7 +38,6 @@ const COLORS = ["#1a73e8", "#34a853", "#ea4335"];
 // ================================
 
 let map;
-let directionsServices = [];
 let directionsRenderers = [];
 let markers = [];
 
@@ -66,7 +63,7 @@ function initMap() {
     zoom: 12
   });
 
-  addMarker(START_POINT, "S");
+  addStartMarker();
 }
 
 // ================================
@@ -85,11 +82,8 @@ function buildCheckboxList() {
     cb.type = "checkbox";
     cb.value = poi.id;
 
-    const text = document.createElement("span");
-    text.textContent = poi.name;
-
     label.appendChild(cb);
-    label.appendChild(text);
+    label.appendChild(document.createTextNode(poi.name));
     list.appendChild(label);
   });
 }
@@ -119,8 +113,8 @@ function calculate() {
   }
 
   const groups = splitIntoGroups(selected, carCount);
-
   groups.forEach((group, i) => drawRoute(group, i));
+
   setStatus("ルート計算完了");
 }
 
@@ -139,7 +133,6 @@ function drawRoute(pois, index) {
     }
   });
 
-  directionsServices.push(service);
   directionsRenderers.push(renderer);
 
   const waypoints = pois.map(p => ({
@@ -158,16 +151,87 @@ function drawRoute(pois, index) {
     (result, status) => {
       if (status === "OK") {
         renderer.setDirections(result);
-        pois.forEach(p => addMarker(p));
-      } else {
-        setStatus("ルート取得に失敗しました");
+
+        renderRouteDetail(result, index);
+
+        const order = result.routes[0].waypoint_order;
+
+        addStartMarker();
+
+        order.forEach((idx, i) => {
+          addNumberedMarker(pois[idx], i + 1, COLORS[index]);
+        });
       }
     }
   );
 }
 
 // ================================
-// 9. 補助関数
+// 9. ルート詳細DOM生成（①）
+// ================================
+
+function renderRouteDetail(result, index) {
+  const container = document.getElementById("routeDetail");
+
+  const route = result.routes[0];
+  const legs = route.legs;
+
+  const section = document.createElement("div");
+  section.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車 ${index + 1}</h4>`;
+
+  const ol = document.createElement("ol");
+
+  legs.forEach(leg => {
+    const li = document.createElement("li");
+    li.textContent = `${leg.start_address} → ${leg.end_address}
+      (${leg.distance.text} / ${leg.duration.text})`;
+    ol.appendChild(li);
+  });
+
+  section.appendChild(ol);
+  container.appendChild(section);
+}
+
+// ================================
+// 10. マーカー関連（②）
+// ================================
+
+function addStartMarker() {
+  const marker = new google.maps.Marker({
+    position: START_POINT,
+    map,
+    label: { text: "S", color: "#fff", fontWeight: "bold" },
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 14,
+      fillColor: "#16a34a",
+      fillOpacity: 1,
+      strokeColor: "#fff",
+      strokeWeight: 2
+    }
+  });
+  markers.push(marker);
+}
+
+function addNumberedMarker(point, number, color) {
+  const marker = new google.maps.Marker({
+    position: { lat: point.lat, lng: point.lng },
+    map,
+    label: { text: String(number), color: "#fff", fontWeight: "bold" },
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 12,
+      fillColor: color,
+      fillOpacity: 1,
+      strokeColor: "#fff",
+      strokeWeight: 2
+    }
+  });
+  markers.push(marker);
+}
+
+// ================================
+// 11. 補助関数
 // ================================
 
 function getSelectedPois() {
@@ -181,24 +245,15 @@ function splitIntoGroups(arr, n) {
   return groups;
 }
 
-function addMarker(point, label = "") {
-  const marker = new google.maps.Marker({
-    position: { lat: point.lat, lng: point.lng },
-    map,
-    label
-  });
-  markers.push(marker);
-}
-
 function clearRoutes() {
   directionsRenderers.forEach(r => r.setMap(null));
   directionsRenderers = [];
-  directionsServices = [];
 
   markers.forEach(m => m.setMap(null));
   markers = [];
 
-  addMarker(START_POINT, "S");
+  document.getElementById("routeDetail").innerHTML = "";
+  addStartMarker();
 }
 
 function clearAll() {
@@ -210,4 +265,3 @@ function clearAll() {
 function setStatus(msg) {
   document.getElementById("status").textContent = msg;
 }
-
