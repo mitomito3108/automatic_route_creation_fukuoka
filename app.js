@@ -230,7 +230,7 @@ function addNumberedMarker(p, n, c) {
     position: p,
     map,
     label: { text: String(n), color: "#fff" },
-    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: c, fillOpacity: 1 }
+    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: c, fillOpacity: 1,strokeWeight: 0 }
   }));
 }
 
@@ -267,3 +267,4 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
+
