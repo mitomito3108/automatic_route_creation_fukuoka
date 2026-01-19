@@ -8,6 +8,12 @@ const START_POINT = {
   lng: 130.390984
 };
 
+const END_POINT = {
+  name: "福岡市保健環境研究所",
+  lat: 33.594422,
+  lng: 130.364309
+};
+
 const POIS = [
   { id: "株式会社中部衛生検査センター", name: "株式会社中部衛生検査センター", lat: 33.577054, lng: 130.439889 },
   { id: "株式会社保健科学研究所", name: "株式会社　保健科学研究所", lat: 33.578562, lng: 130.436188 },
@@ -163,7 +169,7 @@ function drawRoute(pois, index) {
 
   service.route({
     origin: START_POINT,
-    destination: START_POINT,
+    destination: END_POINT,
     waypoints: pois.map(p => ({ location: p, stopover: true })),
     optimizeWaypoints: true,
     travelMode: "DRIVING"
@@ -192,7 +198,7 @@ function renderRouteDetail(result, index, pois) {
   const legs = route.legs;
   const order = route.waypoint_order;
   const ordered = order.map(i => pois[i]);
-  const points = [START_POINT, ...ordered, START_POINT];
+  const points = [START_POINT, ...ordered, END_POINT];
 
   let dist = 0, time = 0;
 
@@ -279,5 +285,6 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
+
 
 
