@@ -248,7 +248,7 @@ function addEndMarker() {
   markers.push(new google.maps.Marker({
     position: END_POINT,
     map,
-    label: "S"
+    label: "G"
   }));
 }
 
@@ -294,6 +294,7 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
+
 
 
 
