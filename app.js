@@ -178,6 +178,7 @@ function drawRoute(pois, index) {
 
     renderer.setDirections(res);
     renderRouteDetail(res, index, pois);
+    addEndMarker();
     addStartMarker();
 
     res.routes[0].waypoint_order.forEach((i, n) =>
@@ -243,6 +244,14 @@ function addStartMarker() {
   }));
 }
 
+function addEndMarker() {
+  markers.push(new google.maps.Marker({
+    position: END_POINT,
+    map,
+    label: "S"
+  }));
+}
+
 function addNumberedMarker(p, n, c) {
   markers.push(new google.maps.Marker({
     position: p,
@@ -285,6 +294,7 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
+
 
 
 
