@@ -2,7 +2,7 @@
 // 1. 定数定義
 // ================================
 
-const START_POINT = {
+let START_POINT = {
   name: "あいれふ",
   lat: 33.592120,
   lng: 130.390984
@@ -15,36 +15,35 @@ const END_POINT = {
 };
 
 const POIS = [
+  { id: "株式会社BMLフードサイエンス福岡", name: "株式会社BMLフード・サイエンス（福岡）", lat: 33.574426, lng: 130.44855 },
+  { id: "株式会社QCL", name: "株式会社QCL", lat: 33.625788, lng: 130.436202 },
+  { id: "株式会社シーアールシー", name: "株式会社　シー・アール・シー", lat: 33.628696, lng: 130.438564 },
   { id: "株式会社中部衛生検査センター", name: "株式会社中部衛生検査センター", lat: 33.577054, lng: 130.439889 },
   { id: "株式会社保健科学研究所", name: "株式会社　保健科学研究所", lat: 33.578562, lng: 130.436188 },
-  { id: "株式会社シーアールシー", name: "株式会社　シー・アール・シー", lat: 33.628696, lng: 130.438564 },
-  { id: "九州大学病院", name: "九州大学病院", lat: 33.609234, lng: 130.415726 },
-  { id: "福岡市保健環境研究所", name: "福岡市保健環境研究所", lat: 33.594422, lng: 130.364309 },
-  { id: "九州医療センター", name: "九州医療センター", lat: 33.592358, lng: 130.362518 },
-  { id: "福岡市医師会臨床検査センター", name: "福岡市医師会臨床検査センター", lat: 33.592375, lng: 130.356109 },
-  { id: "福岡大学病院", name: "福岡大学病院", lat: 33.546318, lng: 130.358902 },
-  { id: "福岡病院", name: "福岡病院", lat: 33.535946, lng: 130.408524 },
-  { id: "那珂川病院", name: "那珂川病院", lat: 33.539406, lng: 130.427597 },
-  { id: "九州がんセンター", name: "九州がんセンター", lat: 33.541073, lng: 130.420471 },
-  { id: "公立学校共済組合九州中央病院", name: "公立学校共済組合九州中央病院", lat: 33.564079, lng: 130.424728 },
-  { id: "福岡赤十字病院", name: "福岡赤十字病院", lat: 33.572178, lng: 130.413971 },
-  { id: "福岡和白病院", name: "福岡和白病院", lat: 33.69215, lng: 130.434174 },
-  { id: "株式会社QCL", name: "株式会社QCL", lat: 33.625788, lng: 130.436202 },
   { id: "貝塚病院", name: "貝塚病院", lat: 33.635334, lng: 130.424973 },
   { id: "輝栄会病院", name: "輝栄会病院", lat: 33.648537, lng: 130.436996 },
-  { id: "福岡市立こども病院", name: "福岡市立こども病院", lat: 33.662792, lng: 130.417313 },
-  { id: "福岡市民病院", name: "福岡市民病院", lat: 33.604118, lng: 130.42189 },
-  { id: "株式会社BMLフードサイエンス福岡", name: "株式会社BMLフード・サイエンス（福岡）", lat: 33.574426, lng: 130.44855 },
-  { id: "千鳥橋病院", name: "千鳥橋病院", lat: 33.607758, lng: 130.412308 },
-  { id: "原三信病院", name: "原三信病院", lat: 33.601639, lng: 130.405167 },
-  { id: "昭和病院", name: "昭和病院", lat: 33.580364, lng: 130.256409 },
-  { id: "白十字病院", name: "白十字病院", lat: 33.570805, lng: 130.315674 },
-  { id: "白十字リハビリテーション病院", name: "白十字リハビリテーション病院", lat: 33.574097, lng: 130.316071 },
-  { id: "浜の町病院", name: "浜の町病院", lat: 33.596153, lng: 130.39418 },
+  { id: "九州医療センター", name: "九州医療センター", lat: 33.592358, lng: 130.362518 },
+  { id: "九州がんセンター", name: "九州がんセンター", lat: 33.541073, lng: 130.420471 },
+  { id: "九州大学病院", name: "九州大学病院", lat: 33.609234, lng: 130.415726 },
+  { id: "公立学校共済組合九州中央病院", name: "公立学校共済組合九州中央病院", lat: 33.564079, lng: 130.424728 },
   { id: "済生会福岡総合病院", name: "済生会福岡総合病院", lat: 33.589699, lng: 130.403229 },
   { id: "さくら病院", name: "さくら病院", lat: 33.545528, lng: 130.369781 },
+  { id: "昭和病院", name: "昭和病院", lat: 33.580364, lng: 130.256409 },
+  { id: "千鳥橋病院", name: "千鳥橋病院", lat: 33.607758, lng: 130.412308 },
+  { id: "那珂川病院", name: "那珂川病院", lat: 33.539406, lng: 130.427597 },
+  { id: "白十字病院", name: "白十字病院", lat: 33.570805, lng: 130.315674 },
+  { id: "白十字リハビリテーション病院", name: "白十字リハビリテーション病院", lat: 33.574097, lng: 130.316071 },
+  { id: "原三信病院", name: "原三信病院", lat: 33.601639, lng: 130.405167 },
+  { id: "浜の町病院", name: "浜の町病院", lat: 33.596153, lng: 130.39418 },
+  { id: "福岡記念病院", name: "福岡記念病院", lat: 33.585087, lng: 130.362473 },
   { id: "福岡山王病院", name: "福岡山王病院", lat: 33.591473, lng: 130.34993 },
-  { id: "福岡記念病院", name: "福岡記念病院", lat: 33.585087, lng: 130.362473 }
+  { id: "福岡市医師会臨床検査センター", name: "福岡市医師会臨床検査センター", lat: 33.592375, lng: 130.356109 },
+  { id: "福岡市立こども病院", name: "福岡市立こども病院", lat: 33.662792, lng: 130.417313 },
+  { id: "福岡市民病院", name: "福岡市民病院", lat: 33.604118, lng: 130.42189 },
+  { id: "福岡赤十字病院", name: "福岡赤十字病院", lat: 33.572178, lng: 130.413971 },
+  { id: "福岡大学病院", name: "福岡大学病院", lat: 33.546318, lng: 130.358902 },
+  { id: "福岡病院", name: "福岡病院", lat: 33.535946, lng: 130.408524 },
+  { id: "福岡和白病院", name: "福岡和白病院", lat: 33.69215, lng: 130.434174 }
 ];
 
 const COLORS = ["#1a73e8", "#34a853", "#ea4335"];
@@ -57,6 +56,7 @@ let map;
 let renderers = [];
 let markers = [];
 let worker;
+let startMarker = null;
 
 // ================================
 // 3. 初期化
@@ -67,6 +67,7 @@ window.onload = () => {
   buildCheckboxList();
   bindEvents();
   worker = new Worker("worker.js");
+  updateStartInfo();
 };
 
 // ================================
@@ -78,7 +79,19 @@ function initMap() {
     center: START_POINT,
     zoom: 12
   });
+
   addStartMarker();
+
+  map.addListener("click", e => {
+    START_POINT = {
+      name: "選択した地点",
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+
+    addStartMarker();
+    updateStartInfo();
+  });
 }
 
 // ================================
@@ -142,14 +155,10 @@ function calculate() {
   setStatus("計算中...");
   document.getElementById("calcBtn").disabled = true;
 
-  worker.postMessage({
-    pois: selected,
-    carCount
-  });
+  worker.postMessage({ pois: selected, carCount });
 
   worker.onmessage = e => {
-    const groups = e.data;
-    groups.forEach((g, i) => drawRoute(g, i));
+    e.data.forEach((g, i) => drawRoute(g, i));
   };
 }
 
@@ -227,9 +236,7 @@ function renderRouteDetail(result, index, pois) {
 
 function appendTotals(i, dist, time) {
   const t = document.getElementById("totals");
-  const km = (dist / 1000).toFixed(1);
-  const min = Math.round(time / 60);
-  t.innerHTML += `<div style="color:${COLORS[i]}">車${i + 1}: ${km}km / ${min}分</div>`;
+  t.innerHTML += `<div style="color:${COLORS[i]}">車${i + 1}: ${(dist / 1000).toFixed(1)}km / ${Math.round(time / 60)}分</div>`;
 }
 
 // ================================
@@ -237,11 +244,13 @@ function appendTotals(i, dist, time) {
 // ================================
 
 function addStartMarker() {
-  markers.push(new google.maps.Marker({
+  if (startMarker) startMarker.setMap(null);
+
+  startMarker = new google.maps.Marker({
     position: START_POINT,
     map,
     label: "S"
-  }));
+  });
 }
 
 function addEndMarker() {
@@ -257,13 +266,24 @@ function addNumberedMarker(p, n, c) {
     position: p,
     map,
     label: { text: String(n), color: "#fff" },
-    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: c, fillOpacity: 1,strokeWeight: 0 }
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 12,
+      fillColor: c,
+      fillOpacity: 1,
+      strokeWeight: 0
+    }
   }));
 }
 
 // ================================
 // 12. Util
 // ================================
+
+function updateStartInfo() {
+  document.getElementById("startInfo").textContent =
+    `スタート地点: ${START_POINT.lat.toFixed(5)}, ${START_POINT.lng.toFixed(5)}`;
+}
 
 function getSelectedPois() {
   const ids = [...document.querySelectorAll("#poiList input:checked")].map(i => i.value);
@@ -294,8 +314,3 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
-
-
-
-
-
