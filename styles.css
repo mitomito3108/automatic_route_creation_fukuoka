@@ -22,7 +22,7 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Seg
 .input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 10px; background: #f9fafb; }
 
 .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-.checkbox-item { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px dashed #e5e7eb; border-radius: 12px; cursor: pointer; transition: all .2s ease; }
+.checkbox-item { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px dashed #e5e7eb; border-radius: 12px; cursor: pointer; transition: all .2s ease; line-height: 1.2;}
 .checkbox-item:hover { background: #f8fafc; }
 .checkbox-item input { appearance: none; width: 18px; height: 18px; border: 2px solid #9ca3af; border-radius: 6px; position: relative; }
 .checkbox-item input:checked { border-color: #2563eb; background: #2563eb; }
