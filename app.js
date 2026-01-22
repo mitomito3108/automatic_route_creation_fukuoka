@@ -15,7 +15,7 @@ const END_POINT = {
 };
 
 const POIS = [
-  { id: "株式会社BMLフードサイエンス福岡", name: "株式会社BMLフード・サイエンス（福岡）", lat: 33.574426, lng: 130.44855 },
+  { id: "株式会社BMLフードサイエンス福岡", name: "株式会社BMLフード・サイエンス", lat: 33.574426, lng: 130.44855 },
   { id: "株式会社QCL", name: "株式会社QCL", lat: 33.625788, lng: 130.436202 },
   { id: "株式会社シーアールシー", name: "株式会社　シー・アール・シー", lat: 33.628696, lng: 130.438564 },
   { id: "株式会社中部衛生検査センター", name: "株式会社中部衛生検査センター", lat: 33.577054, lng: 130.439889 },
@@ -314,3 +314,4 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
+
