@@ -111,11 +111,16 @@ function buildCheckboxList() {
     cb.value = p.id;
     cb.onchange = updateSelectedTags;
 
+    const text = document.createElement("span");
+    text.className = "checkbox-text";
+    text.textContent = p.name;
+
     label.appendChild(cb);
-    label.appendChild(document.createTextNode(p.name));
+    label.appendChild(text); 
     list.appendChild(label);
   });
 }
+
 
 function updateSelectedTags() {
   const tags = document.getElementById("selectedTags");
@@ -314,4 +319,5 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
+
 
