@@ -24,7 +24,7 @@ html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Seg
 .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .checkbox-item { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px dashed #e5e7eb; border-radius: 12px; cursor: pointer; transition: all .2s ease; line-height: 1.2;}
 .checkbox-item:hover { background: #f8fafc; }
-.checkbox-item input { appearance: none; width: 18px; height: 18px; border: 2px solid #9ca3af; border-radius: 6px; position: relative; display: block;}
+.checkbox-item input { appearance: none; width: 18px; height: 18px; border: 2px solid #9ca3af; border-radius: 6px; position: relative; }
 .checkbox-item input:checked { border-color: #2563eb; background: #2563eb; }
 .checkbox-item input::after {  content: "";  position: absolute;  top: 50%;  left: 50%;  width: 5px;  height: 9px;  border: solid white;  border-width: 0 2px 2px 0;  transform: translate(-50%, -60%) rotate(45deg);  opacity: 0;}
 .checkbox-item input:checked::after {  opacity: 1;}
