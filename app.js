@@ -57,6 +57,7 @@ let renderers = [];
 let markers = [];
 let worker;
 let startMarker = null;
+let autocomplete;
 
 // ================================
 // 3. 初期化
@@ -64,6 +65,7 @@ let startMarker = null;
 
 window.onload = () => {
   initMap();
+  initPlaceSearch();
   buildCheckboxList();
   bindEvents();
   worker = new Worker("worker.js");
@@ -91,6 +93,30 @@ function initMap() {
 
     addStartMarker();
     updateStartInfo();
+  });
+}
+
+function initPlaceSearch() {
+  const input = document.getElementById("placeSearch");
+  autocomplete = new google.maps.places.Autocomplete(input, {
+    fields: ["name", "geometry"]
+  });
+
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry) return;
+
+    const newPoi = {
+      id: "custom_" + Date.now(),
+      name: place.name,
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    };
+
+    POIS.push(newPoi);           // 一覧に追加
+    buildCheckboxList();         // UI再描画
+    setStatus("経由地に追加しました");
+    input.value = "";
   });
 }
 
@@ -219,21 +245,66 @@ function renderRouteDetail(result, index, pois) {
 
   const div = document.createElement("div");
   div.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車${index + 1}</h4>`;
+  
   const ol = document.createElement("ol");
 
   legs.forEach((l, i) => {
     dist += l.distance.value;
     time += l.duration.value;
+
     const li = document.createElement("li");
-    li.textContent = `${points[i].name} → ${points[i + 1].name}（${l.distance.text} / ${l.duration.text}）`;
+    li.textContent =
+      `${points[i].name} → ${points[i + 1].name}（${l.distance.text} / ${l.duration.text}）`;
+
     ol.appendChild(li);
   });
 
   div.appendChild(ol);
+
+  // ===============================
+  // 🔽 ここからGoogleマップ共有機能追加
+  // ===============================
+
+  const url = buildGoogleMapsUrl(points);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.textContent = "▶ このルートをGoogleマップで開く";
+  link.style.display = "block";
+  link.style.margin = "8px 0";
+
+  const qr = document.createElement("img");
+  qr.src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" +
+    encodeURIComponent(url);
+  qr.alt = "QRコード";
+  qr.style.marginBottom = "12px";
+
+  div.appendChild(link);
+  div.appendChild(qr);
+
+  // ===============================
+  // 🔼 追加ここまで
+  // ===============================
+
   box.appendChild(div);
 
   appendTotals(index, dist, time);
 }
+
+
+function buildGoogleMapsUrl(points) {
+  const origin = `${points[0].lat},${points[0].lng}`;
+  const destination = `${points[points.length - 1].lat},${points[points.length - 1].lng}`;
+  const waypoints = points
+    .slice(1, -1)
+    .map(p => `${p.lat},${p.lng}`)
+    .join("|");
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+}
+
 
 // ================================
 // 10. 合計表示
@@ -287,7 +358,7 @@ function addNumberedMarker(p, n, c) {
 
 function updateStartInfo() {
   document.getElementById("startInfo").textContent =
-    `スタート地点: ${START_POINT.lat.toFixed(5)}, ${START_POINT.lng.toFixed(5)}`;
+    `スタート地点: ${START_POINT.name}`;
 }
 
 function getSelectedPois() {
@@ -319,5 +390,6 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
+
 
 
