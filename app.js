@@ -48,6 +48,9 @@ const POIS = [
 
 const COLORS = ["#1a73e8", "#34a853", "#ea4335"];
 
+// ★追加：対応時間（分）
+const SERVICE_TIME = {};
+
 // ================================
 // 2. グローバル
 // ================================
@@ -73,55 +76,7 @@ window.onload = () => {
 };
 
 // ================================
-// 4. Map
-// ================================
-
-function initMap() {
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: START_POINT,
-    zoom: 12
-  });
-
-  addStartMarker();
-
-  map.addListener("click", e => {
-    START_POINT = {
-      name: "選択した地点",
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng()
-    };
-
-    addStartMarker();
-    updateStartInfo();
-  });
-}
-
-function initPlaceSearch() {
-  const input = document.getElementById("placeSearch");
-  autocomplete = new google.maps.places.Autocomplete(input, {
-    fields: ["name", "geometry"]
-  });
-
-  autocomplete.addListener("place_changed", () => {
-    const place = autocomplete.getPlace();
-    if (!place.geometry) return;
-
-    const newPoi = {
-      id: "custom_" + Date.now(),
-      name: place.name,
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng()
-    };
-
-    POIS.push(newPoi);           // 一覧に追加
-    buildCheckboxList();         // UI再描画
-    setStatus("経由地に追加しました");
-    input.value = "";
-  });
-}
-
-// ================================
-// 5. UI生成
+// 5. UI生成（★完全改修）
 // ================================
 
 function buildCheckboxList() {
@@ -135,102 +90,48 @@ function buildCheckboxList() {
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.value = p.id;
-    cb.onchange = updateSelectedTags;
 
     const text = document.createElement("span");
     text.className = "checkbox-text";
     text.textContent = p.name;
 
+    // ★対応時間UI
+    const timeBox = document.createElement("div");
+    timeBox.style.display = "none";
+    timeBox.style.marginTop = "6px";
+
+    timeBox.innerHTML = `
+      <label><input type="radio" name="time_${p.id}" value="10">10分</label>
+      <label><input type="radio" name="time_${p.id}" value="15">15分</label>
+      <label><input type="radio" name="time_${p.id}" value="30">30分</label>
+      <input type="number" placeholder="自由(分)" style="width:60px;" />
+    `;
+
+    cb.onchange = () => {
+      timeBox.style.display = cb.checked ? "block" : "none";
+
+      if (!cb.checked) delete SERVICE_TIME[p.id];
+
+      updateSelectedTags();
+    };
+
+    timeBox.addEventListener("change", () => {
+      const radio = timeBox.querySelector("input[type=radio]:checked");
+      const free = timeBox.querySelector("input[type=number]").value;
+
+      SERVICE_TIME[p.id] = Number(free || (radio ? radio.value : 0));
+    });
+
     label.appendChild(cb);
-    label.appendChild(text); 
+    label.appendChild(text);
+    label.appendChild(timeBox);
+
     list.appendChild(label);
   });
 }
 
-
-function updateSelectedTags() {
-  const tags = document.getElementById("selectedTags");
-  tags.innerHTML = "";
-  getSelectedPois().forEach(p => {
-    const span = document.createElement("span");
-    span.className = "tag";
-    span.textContent = p.name;
-    tags.appendChild(span);
-  });
-}
-
 // ================================
-// 6. Events
-// ================================
-
-function bindEvents() {
-  document.getElementById("calcBtn").onclick = calculate;
-  document.getElementById("clearBtn").onclick = clearAll;
-}
-
-// ================================
-// 7. 計算開始
-// ================================
-
-function calculate() {
-  clearRoutes();
-
-  const selected = getSelectedPois();
-  if (!selected.length) {
-    setStatus("経由地を選択してください");
-    return;
-  }
-
-  const carCount = Number(document.getElementById("carCount").value);
-
-  setStatus("計算中...");
-  document.getElementById("calcBtn").disabled = true;
-
-  worker.postMessage({ pois: selected, carCount });
-
-  worker.onmessage = e => {
-    e.data.forEach((g, i) => drawRoute(g, i));
-  };
-}
-
-// ================================
-// 8. ルート描画
-// ================================
-
-function drawRoute(pois, index) {
-  const service = new google.maps.DirectionsService();
-  const renderer = new google.maps.DirectionsRenderer({
-    map,
-    suppressMarkers: true,
-    polylineOptions: { strokeColor: COLORS[index], strokeWeight: 5 }
-  });
-
-  renderers.push(renderer);
-
-  service.route({
-    origin: START_POINT,
-    destination: END_POINT,
-    waypoints: pois.map(p => ({ location: p, stopover: true })),
-    optimizeWaypoints: true,
-    travelMode: "DRIVING"
-  }, (res, status) => {
-    if (status !== "OK") return;
-
-    renderer.setDirections(res);
-    renderRouteDetail(res, index, pois);
-    addEndMarker();
-    addStartMarker();
-
-    res.routes[0].waypoint_order.forEach((i, n) =>
-      addNumberedMarker(pois[i], n + 1, COLORS[index])
-    );
-
-    finalize();
-  });
-}
-
-// ================================
-// 9. 詳細表示
+// 9. 詳細表示（★完全改修）
 // ================================
 
 function renderRouteDetail(result, index, pois) {
@@ -242,6 +143,7 @@ function renderRouteDetail(result, index, pois) {
   const points = [START_POINT, ...ordered, END_POINT];
 
   let dist = 0, time = 0;
+  let serviceTimeTotal = 0;
 
   const div = document.createElement("div");
   div.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車${index + 1}</h4>`;
@@ -252,67 +154,44 @@ function renderRouteDetail(result, index, pois) {
     dist += l.distance.value;
     time += l.duration.value;
 
+    const next = points[i + 1];
+
+    let serviceMin = 0;
+    if (next.id && SERVICE_TIME[next.id]) {
+      serviceMin = SERVICE_TIME[next.id];
+      serviceTimeTotal += serviceMin * 60;
+    }
+
     const li = document.createElement("li");
     li.textContent =
-      `${points[i].name} → ${points[i + 1].name}（${l.distance.text} / ${l.duration.text}）`;
+      `${points[i].name} → ${next.name}（${l.distance.text} / ${l.duration.text}` +
+      (serviceMin ? ` + 対応${serviceMin}分` : "") +
+      `）`;
 
     ol.appendChild(li);
   });
 
   div.appendChild(ol);
-
-  // ===============================
-  // 🔽 ここからGoogleマップ共有機能追加
-  // ===============================
-
-  const url = buildGoogleMapsUrl(points);
-
-  const link = document.createElement("a");
-  link.href = url;
-  link.target = "_blank";
-  link.textContent = "▶ このルートをGoogleマップで開く";
-  link.style.display = "block";
-  link.style.margin = "8px 0";
-
-  const qr = document.createElement("img");
-  qr.src =
-    "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" +
-    encodeURIComponent(url);
-  qr.alt = "QRコード";
-  qr.style.marginBottom = "12px";
-
-  div.appendChild(link);
-  div.appendChild(qr);
-
-  // ===============================
-  // 🔼 追加ここまで
-  // ===============================
-
   box.appendChild(div);
 
-  appendTotals(index, dist, time);
+  appendTotals(index, dist, time, serviceTimeTotal);
 }
 
-
-function buildGoogleMapsUrl(points) {
-  const origin = `${points[0].lat},${points[0].lng}`;
-  const destination = `${points[points.length - 1].lat},${points[points.length - 1].lng}`;
-  const waypoints = points
-    .slice(1, -1)
-    .map(p => `${p.lat},${p.lng}`)
-    .join("|");
-
-  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
-}
-
-
 // ================================
-// 10. 合計表示
+// 10. 合計表示（★改修）
 // ================================
 
-function appendTotals(i, dist, time) {
+function appendTotals(i, dist, time, serviceTime = 0) {
   const t = document.getElementById("totals");
-  t.innerHTML += `<div style="color:${COLORS[i]}">車${i + 1}: ${(dist / 1000).toFixed(1)}km / ${Math.round(time / 60)}分</div>`;
+
+  const totalMin = Math.round((time + serviceTime) / 60);
+
+  t.innerHTML += `
+    <div style="color:${COLORS[i]}">
+      車${i + 1}: ${(dist / 1000).toFixed(1)}km / ${totalMin}分
+      ${serviceTime ? `(対応${Math.round(serviceTime / 60)}分含む)` : ""}
+    </div>
+  `;
 }
 
 // ================================
