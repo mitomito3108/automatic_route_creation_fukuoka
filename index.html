@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DX12班搬送ルート提案（デモ用）</title>
+  <title>DX12班搬送ルート提案（対応時間付き）</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <div class="brand">
       <div class="logo">🚗</div>
       <div>
-        <h1>DX12班搬送ルート提案(デモ用)</h1>
+        <h1>DX12班搬送ルート提案(対応時間付き)</h1>
         <p> Google Mapsで搬送ルートを提案（車1〜3台）</p>
       </div>
     </div>
@@ -35,6 +35,7 @@
 
       <div class="field">
         <label>経由地（チェックで複数選択）</label>
+        <!-- JSで「対応時間UI」がここに動的生成される -->
         <div id="poiList" class="checkbox-grid" aria-label="観光地を選択"></div>
       </div>
       
@@ -42,8 +43,6 @@
         <label>経由地を検索して追加</label>
         <input id="placeSearch" class="input" type="text" placeholder="施設名・住所を入力" />
       </div>
-
-      
 
       <div class="field">
         <label>選択中</label>
@@ -60,27 +59,34 @@
       <div id="map" class="map card"></div>
       <aside class="side card">
         <h3>スタート地点：あいれふ（クリックして変更可能）</h3>
-        <!-- <div id="startInfo" class="start-info"> 
-        </div> -->
+
+        <!-- ✅ ここを有効化 -->
+        <div id="startInfo" class="start-info"></div>
+
         <h3>凡例</h3>
         <ul class="legend">
           <li><span class="swatch" style="background:#1a73e8"></span> 車1（青）</li>
           <li><span class="swatch" style="background:#34a853"></span> 車2（緑）</li>
           <li><span class="swatch" style="background:#ea4335"></span> 車3（赤）</li>
         </ul>
+
         <h3>合計</h3>
         <div id="totals" class="totals"></div>
+
         <h3>ステータス</h3>
         <div id="status" class="status"></div>
       </aside>
     </section>
   </main>
-　<div class="card" id="routeDetail"></div>
+
+  <!-- ✅ 全角スペース削除済 -->
+  <div class="card" id="routeDetail"></div>
+
   <footer class="footer">
     <small>© 福岡 経由地最適化デモ | Google Maps JavaScript API（Places/Geometry）を利用</small>
   </footer>
 
-  <!-- Google Maps JavaScript API（Places/Geometry ライブラリ読み込み） -->
+  <!-- Google Maps JavaScript API -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBXskYss6vmHiYblfLtD2kpuY-ELrHRr2c&libraries=places,geometry&language=ja"></script>
   <script src="app.js"></script>
 </body>
