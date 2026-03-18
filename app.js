@@ -76,7 +76,55 @@ window.onload = () => {
 };
 
 // ================================
-// 5. UI生成（★完全改修）
+// 4. Map
+// ================================
+
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: START_POINT,
+    zoom: 12
+  });
+
+  addStartMarker();
+
+  map.addListener("click", e => {
+    START_POINT = {
+      name: "選択した地点",
+      lat: e.latLng.lat(),
+      lng: e.latLng.lng()
+    };
+    addStartMarker();
+    updateStartInfo();
+  });
+}
+
+function initPlaceSearch() {
+  const input = document.getElementById("placeSearch");
+
+  autocomplete = new google.maps.places.Autocomplete(input, {
+    fields: ["name", "geometry"]
+  });
+
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry) return;
+
+    const newPoi = {
+      id: "custom_" + Date.now(),
+      name: place.name,
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng()
+    };
+
+    POIS.push(newPoi);
+    buildCheckboxList();
+    setStatus("経由地に追加しました");
+    input.value = "";
+  });
+}
+
+// ================================
+// 5. UI生成（★対応時間追加）
 // ================================
 
 function buildCheckboxList() {
@@ -95,10 +143,8 @@ function buildCheckboxList() {
     text.className = "checkbox-text";
     text.textContent = p.name;
 
-    // ★対応時間UI
     const timeBox = document.createElement("div");
     timeBox.style.display = "none";
-    timeBox.style.marginTop = "6px";
 
     timeBox.innerHTML = `
       <label><input type="radio" name="time_${p.id}" value="10">10分</label>
@@ -130,12 +176,101 @@ function buildCheckboxList() {
   });
 }
 
+function updateSelectedTags() {
+  const tags = document.getElementById("selectedTags");
+  tags.innerHTML = "";
+
+  getSelectedPois().forEach(p => {
+    const span = document.createElement("span");
+    span.className = "tag";
+    span.textContent = p.name;
+    tags.appendChild(span);
+  });
+}
+
 // ================================
-// 9. 詳細表示（★完全改修）
+// 6. Events
+// ================================
+
+function bindEvents() {
+  document.getElementById("calcBtn").onclick = calculate;
+  document.getElementById("clearBtn").onclick = clearAll;
+}
+
+// ================================
+// 7. 計算
+// ================================
+
+function calculate() {
+  clearRoutes();
+
+  const selected = getSelectedPois();
+  if (!selected.length) {
+    setStatus("経由地を選択してください");
+    return;
+  }
+
+  const carCount = Number(document.getElementById("carCount").value);
+
+  setStatus("計算中...");
+  document.getElementById("calcBtn").disabled = true;
+
+  worker.postMessage({ pois: selected, carCount });
+
+  worker.onmessage = e => {
+    e.data.forEach((g, i) => drawRoute(g, i));
+  };
+}
+
+// ================================
+// 8. ルート描画
+// ================================
+
+function drawRoute(pois, index) {
+  const service = new google.maps.DirectionsService();
+
+  const renderer = new google.maps.DirectionsRenderer({
+    map,
+    suppressMarkers: true,
+    polylineOptions: {
+      strokeColor: COLORS[index],
+      strokeWeight: 5
+    }
+  });
+
+  renderers.push(renderer);
+
+  service.route({
+    origin: START_POINT,
+    destination: END_POINT,
+    waypoints: pois.map(p => ({ location: p, stopover: true })),
+    optimizeWaypoints: true,
+    travelMode: "DRIVING"
+  }, (res, status) => {
+    if (status !== "OK") return;
+
+    renderer.setDirections(res);
+
+    renderRouteDetail(res, index, pois);
+
+    addEndMarker();
+    addStartMarker();
+
+    res.routes[0].waypoint_order.forEach((i, n) =>
+      addNumberedMarker(pois[i], n + 1, COLORS[index])
+    );
+
+    finalize();
+  });
+}
+
+// ================================
+// 9. 詳細（★対応時間反映）
 // ================================
 
 function renderRouteDetail(result, index, pois) {
   const box = document.getElementById("routeDetail");
+
   const route = result.routes[0];
   const legs = route.legs;
   const order = route.waypoint_order;
@@ -147,7 +282,7 @@ function renderRouteDetail(result, index, pois) {
 
   const div = document.createElement("div");
   div.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車${index + 1}</h4>`;
-  
+
   const ol = document.createElement("ol");
 
   legs.forEach((l, i) => {
@@ -172,13 +307,40 @@ function renderRouteDetail(result, index, pois) {
   });
 
   div.appendChild(ol);
+
+  // Googleマップリンク
+  const url = buildGoogleMapsUrl(points);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.textContent = "▶ このルートをGoogleマップで開く";
+
+  const qr = document.createElement("img");
+  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" + encodeURIComponent(url);
+
+  div.appendChild(link);
+  div.appendChild(qr);
+
   box.appendChild(div);
 
   appendTotals(index, dist, time, serviceTimeTotal);
 }
 
 // ================================
-// 10. 合計表示（★改修）
+// URL生成
+// ================================
+
+function buildGoogleMapsUrl(points) {
+  const origin = `${points[0].lat},${points[0].lng}`;
+  const destination = `${points[points.length - 1].lat},${points[points.length - 1].lng}`;
+  const waypoints = points.slice(1, -1).map(p => `${p.lat},${p.lng}`).join("|");
+
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+}
+
+// ================================
+// 10. 合計
 // ================================
 
 function appendTotals(i, dist, time, serviceTime = 0) {
@@ -269,6 +431,3 @@ function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
 }
-
-
-
