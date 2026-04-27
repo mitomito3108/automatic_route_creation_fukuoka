@@ -17,9 +17,9 @@ const END_POINT = {
 const POIS = [
   { id: "株式会社BMLフードサイエンス福岡", name: "株式会社BMLフード・サイエンス", lat: 33.574426, lng: 130.44855 },
   { id: "株式会社QCL", name: "株式会社QCL", lat: 33.625788, lng: 130.436202 },
-  { id: "株式会社シーアールシー", name: "株式会社　シー・アール・シー", lat: 33.628696, lng: 130.438564 },
+  { id: "株式会社シーアールシー", name: "株式会社 シー・アール・シー", lat: 33.628696, lng: 130.438564 },
   { id: "株式会社中部衛生検査センター", name: "株式会社中部衛生検査センター", lat: 33.577054, lng: 130.439889 },
-  { id: "株式会社保健科学研究所", name: "株式会社　保健科学研究所", lat: 33.578562, lng: 130.436188 },
+  { id: "株式会社保健科学研究所", name: "株式会社 保健科学研究所", lat: 33.578562, lng: 130.436188 },
   { id: "貝塚病院", name: "貝塚病院", lat: 33.635334, lng: 130.424973 },
   { id: "輝栄会病院", name: "輝栄会病院", lat: 33.648537, lng: 130.436996 },
   { id: "九州医療センター", name: "九州医療センター", lat: 33.592358, lng: 130.362518 },
@@ -48,8 +48,11 @@ const POIS = [
 
 const COLORS = ["#1a73e8", "#34a853", "#ea4335"];
 
-// ★追加：対応時間（分）
+// 対応時間（分）
 const SERVICE_TIME = {};
+
+// 出発時刻
+let START_TIME = "09:00";
 
 // ================================
 // 2. グローバル
@@ -93,6 +96,7 @@ function initMap() {
       lat: e.latLng.lat(),
       lng: e.latLng.lng()
     };
+
     addStartMarker();
     updateStartInfo();
   });
@@ -124,7 +128,7 @@ function initPlaceSearch() {
 }
 
 // ================================
-// 5. UI生成（★対応時間追加）
+// 5. UI生成
 // ================================
 
 function buildCheckboxList() {
@@ -150,7 +154,7 @@ function buildCheckboxList() {
       <label><input type="radio" name="time_${p.id}" value="10">10分</label>
       <label><input type="radio" name="time_${p.id}" value="15">15分</label>
       <label><input type="radio" name="time_${p.id}" value="30">30分</label>
-      <input type="number" placeholder="自由(分)" style="width:60px;" />
+      <input type="number" placeholder="自由(分)" style="width:60px;">
     `;
 
     cb.onchange = () => {
@@ -205,6 +209,7 @@ function calculate() {
   clearRoutes();
 
   const selected = getSelectedPois();
+
   if (!selected.length) {
     setStatus("経由地を選択してください");
     return;
@@ -245,9 +250,15 @@ function drawRoute(pois, index) {
     destination: END_POINT,
     waypoints: pois.map(p => ({ location: p, stopover: true })),
     optimizeWaypoints: true,
-    travelMode: "DRIVING"
+    travelMode: "DRIVING",
+    avoidHighways: true
   }, (res, status) => {
-    if (status !== "OK") return;
+
+    if (status !== "OK") {
+      setStatus("ルート取得失敗：" + status);
+      document.getElementById("calcBtn").disabled = false;
+      return;
+    }
 
     renderer.setDirections(res);
 
@@ -256,16 +267,16 @@ function drawRoute(pois, index) {
     addEndMarker();
     addStartMarker();
 
-    res.routes[0].waypoint_order.forEach((i, n) =>
-      addNumberedMarker(pois[i], n + 1, COLORS[index])
-    );
+    res.routes[0].waypoint_order.forEach((i, n) => {
+      addNumberedMarker(pois[i], n + 1, COLORS[index]);
+    });
 
     finalize();
   });
 }
 
 // ================================
-// 9. 詳細（★対応時間反映）
+// 9. 詳細表示
 // ================================
 
 function renderRouteDetail(result, index, pois) {
@@ -277,11 +288,16 @@ function renderRouteDetail(result, index, pois) {
   const ordered = order.map(i => pois[i]);
   const points = [START_POINT, ...ordered, END_POINT];
 
-  let dist = 0, time = 0;
+  let dist = 0;
+  let time = 0;
   let serviceTimeTotal = 0;
 
+  let currentTime = START_TIME;
+
   const div = document.createElement("div");
-  div.innerHTML = `<h4 style="color:${COLORS[index]}">🚗 車${index + 1}</h4>`;
+
+  div.innerHTML =
+    `<h4 style="color:${COLORS[index]}">🚗 車${index + 1}（出発 ${START_TIME}）</h4>`;
 
   const ol = document.createElement("ol");
 
@@ -289,26 +305,35 @@ function renderRouteDetail(result, index, pois) {
     dist += l.distance.value;
     time += l.duration.value;
 
+    const moveMin = Math.round(l.duration.value / 60);
+    currentTime = addMinutes(currentTime, moveMin);
+
     const next = points[i + 1];
 
     let serviceMin = 0;
+
     if (next.id && SERVICE_TIME[next.id]) {
       serviceMin = SERVICE_TIME[next.id];
       serviceTimeTotal += serviceMin * 60;
     }
 
     const li = document.createElement("li");
+
     li.textContent =
-      `${points[i].name} → ${next.name}（${l.distance.text} / ${l.duration.text}` +
-      (serviceMin ? ` + 対応${serviceMin}分` : "") +
-      `）`;
+      `${points[i].name} → ${next.name} ` +
+      `（${l.distance.text} / ${l.duration.text}）` +
+      ` 到着 ${currentTime}` +
+      (serviceMin ? ` / 対応${serviceMin}分` : "");
 
     ol.appendChild(li);
+
+    if (serviceMin) {
+      currentTime = addMinutes(currentTime, serviceMin);
+    }
   });
 
   div.appendChild(ol);
 
-  // Googleマップリンク
   const url = buildGoogleMapsUrl(points);
 
   const link = document.createElement("a");
@@ -317,7 +342,9 @@ function renderRouteDetail(result, index, pois) {
   link.textContent = "▶ このルートをGoogleマップで開く";
 
   const qr = document.createElement("img");
-  qr.src = "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" + encodeURIComponent(url);
+  qr.src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=" +
+    encodeURIComponent(url);
 
   div.appendChild(link);
   div.appendChild(qr);
@@ -334,7 +361,10 @@ function renderRouteDetail(result, index, pois) {
 function buildGoogleMapsUrl(points) {
   const origin = `${points[0].lat},${points[0].lng}`;
   const destination = `${points[points.length - 1].lat},${points[points.length - 1].lng}`;
-  const waypoints = points.slice(1, -1).map(p => `${p.lat},${p.lng}`).join("|");
+  const waypoints = points
+    .slice(1, -1)
+    .map(p => `${p.lat},${p.lng}`)
+    .join("|");
 
   return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
 }
@@ -382,7 +412,10 @@ function addNumberedMarker(p, n, c) {
   markers.push(new google.maps.Marker({
     position: p,
     map,
-    label: { text: String(n), color: "#fff" },
+    label: {
+      text: String(n),
+      color: "#fff"
+    },
     icon: {
       path: google.maps.SymbolPath.CIRCLE,
       scale: 12,
@@ -403,21 +436,30 @@ function updateStartInfo() {
 }
 
 function getSelectedPois() {
-  const ids = [...document.querySelectorAll("#poiList input:checked")].map(i => i.value);
+  const ids = [...document.querySelectorAll("#poiList input:checked")]
+    .map(i => i.value);
+
   return POIS.filter(p => ids.includes(p.id));
 }
 
 function clearRoutes() {
   renderers.forEach(r => r.setMap(null));
   markers.forEach(m => m.setMap(null));
+
   renderers = [];
   markers = [];
+
   document.getElementById("routeDetail").innerHTML = "";
   document.getElementById("totals").innerHTML = "";
 }
 
 function clearAll() {
-  document.querySelectorAll("input[type=checkbox]").forEach(c => c.checked = false);
+  document.querySelectorAll("#poiList input[type=checkbox]").forEach(c => {
+    c.checked = false;
+  });
+
+  Object.keys(SERVICE_TIME).forEach(k => delete SERVICE_TIME[k]);
+
   updateSelectedTags();
   clearRoutes();
   setStatus("");
@@ -430,4 +472,14 @@ function setStatus(t) {
 function finalize() {
   setStatus("ルート計算完了");
   document.getElementById("calcBtn").disabled = false;
+}
+
+function addMinutes(timeStr, minutes) {
+  const [h, m] = timeStr.split(":").map(Number);
+
+  const d = new Date();
+  d.setHours(h);
+  d.setMinutes(m + minutes);
+
+  return d.toTimeString().slice(0, 5);
 }
