@@ -1,93 +1,138 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DX12班搬送ルート提案（20260317修正対応時間付き）</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DX12班搬送ルート提案（対応時間・到着時刻対応版）</title>
+<link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <div class="logo">🚗</div>
-      <div>
-        <h1>DX12班搬送ルート提案(20260317修正対応時間付き)</h1>
-        <p> Google Mapsで搬送ルートを提案（車1〜3台）</p>
-      </div>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="logo">🚗</div>
+    <div>
+      <h1>DX12班搬送ルート提案</h1>
+      <p>Google Mapsで搬送ルートを提案（車1〜3台）</p>
     </div>
-    <div class="header-actions">
-      <a href="#" id="selectAll" class="text-link">全選択</a>
-      <span class="sep">|</span>
-      <a href="#" id="clearSelection" class="text-link">選択解除</a>
+  </div>
+
+  <div class="header-actions">
+    <a href="#" id="selectAll" class="text-link">全選択</a>
+    <span class="sep">|</span>
+    <a href="#" id="clearSelection" class="text-link">選択解除</a>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- 左側：設定 -->
+  <section class="controls card">
+
+    <div class="field">
+      <label for="carCount">使用する車の台数</label>
+      <select id="carCount" class="input">
+        <option value="1">1台</option>
+        <option value="2">2台</option>
+        <option value="3">3台</option>
+      </select>
     </div>
-  </header>
 
-  <main class="container">
-    <section class="controls card">
-      <div class="field">
-        <label for="carCount">使用する車の台数</label>
-        <select id="carCount" class="input">
-          <option value="1">1台</option>
-          <option value="2">2台</option>
-          <option value="3">3台</option>
-        </select>
-      </div>
+    <!-- ★追加：出発時刻 -->
+    <div class="field">
+      <label for="startTime">出発時刻</label>
+      <input type="time" id="startTime" class="input" value="09:00">
+    </div>
 
-      <div class="field">
-        <label>経由地（チェックで複数選択）</label>
-        <!-- JSで「対応時間UI」がここに動的生成される -->
-        <div id="poiList" class="checkbox-grid" aria-label="観光地を選択"></div>
-      </div>
-      
-      <div class="field">
-        <label>経由地を検索して追加</label>
-        <input id="placeSearch" class="input" type="text" placeholder="施設名・住所を入力" />
-      </div>
+    <div class="field">
+      <label>経由地（チェックで複数選択）</label>
+      <div id="poiList" class="checkbox-grid"></div>
+    </div>
 
-      <div class="field">
-        <label>選択中</label>
-        <div id="selectedTags" class="taglist"></div>
-      </div>
+    <div class="field">
+      <label for="placeSearch">経由地を検索して追加</label>
+      <input id="placeSearch" class="input" type="text" placeholder="施設名・住所を入力">
+    </div>
 
-      <div class="actions">
-        <button id="calcBtn" class="btn primary">ルート計算</button>
-        <button id="clearBtn" class="btn">クリア</button>
-      </div>
-    </section>
+    <div class="field">
+      <label>選択中</label>
+      <div id="selectedTags" class="taglist"></div>
+    </div>
 
-    <section class="map-wrap">
-      <div id="map" class="map card"></div>
-      <aside class="side card">
-        <h3>スタート地点：あいれふ（クリックして変更可能）</h3>
+    <div class="actions">
+      <button id="calcBtn" class="btn primary">ルート計算</button>
+      <button id="clearBtn" class="btn">クリア</button>
+    </div>
 
-        <!-- ✅ ここを有効化 -->
-        <div id="startInfo" class="start-info"></div>
+  </section>
 
-        <h3>凡例</h3>
-        <ul class="legend">
-          <li><span class="swatch" style="background:#1a73e8"></span> 車1（青）</li>
-          <li><span class="swatch" style="background:#34a853"></span> 車2（緑）</li>
-          <li><span class="swatch" style="background:#ea4335"></span> 車3（赤）</li>
-        </ul>
+  <!-- 地図 -->
+  <section class="map-wrap">
+    <div id="map" class="map card"></div>
 
-        <h3>合計</h3>
-        <div id="totals" class="totals"></div>
+    <!-- 右側 -->
+    <aside class="side card">
 
-        <h3>ステータス</h3>
-        <div id="status" class="status"></div>
-      </aside>
-    </section>
-  </main>
+      <h3>スタート地点</h3>
+      <div id="startInfo" class="start-info"></div>
 
-  <!-- ✅ 全角スペース削除済 -->
-  <div class="card" id="routeDetail"></div>
+      <h3>凡例</h3>
+      <ul class="legend">
+        <li><span class="swatch blue"></span> 車1</li>
+        <li><span class="swatch green"></span> 車2</li>
+        <li><span class="swatch red"></span> 車3</li>
+      </ul>
 
-  <footer class="footer">
-    <small>© 福岡 経由地最適化デモ | Google Maps JavaScript API（Places/Geometry）を利用</small>
-  </footer>
+      <h3>合計</h3>
+      <div id="totals" class="totals"></div>
 
-  <!-- Google Maps JavaScript API -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBXskYss6vmHiYblfLtD2kpuY-ELrHRr2c&libraries=places,geometry&language=ja"></script>
-  <script src="app.js"></script>
+      <h3>ステータス</h3>
+      <div id="status" class="status"></div>
+
+    </aside>
+  </section>
+
+</main>
+
+<!-- ルート詳細 -->
+<section class="route-section card">
+  <h2>ルート詳細</h2>
+  <div id="routeDetail"></div>
+</section>
+
+<footer class="footer">
+  © 福岡 搬送ルート最適化デモ
+</footer>
+
+<!-- Google Maps -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places,geometry&language=ja"></script>
+
+<!-- app.js -->
+<script src="app.js"></script>
+
+<!-- 補助UI -->
+<script>
+document.getElementById("selectAll").onclick = e => {
+  e.preventDefault();
+  document.querySelectorAll('#poiList input[type="checkbox"]').forEach(cb => {
+    cb.checked = true;
+    cb.dispatchEvent(new Event("change"));
+  });
+};
+
+document.getElementById("clearSelection").onclick = e => {
+  e.preventDefault();
+  document.querySelectorAll('#poiList input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+    cb.dispatchEvent(new Event("change"));
+  });
+};
+
+document.getElementById("startTime").addEventListener("change", function(){
+  START_TIME = this.value;
+});
+</script>
+
 </body>
 </html>
